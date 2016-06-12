@@ -69,6 +69,8 @@ public class SystemConstants {
    
     public static final String RECOMMEND_CAT_ID = PropertiesUtil.getProperty("recommend_cat_id", "0");
     
+    public static final String ARTICLE_DETAIL = PropertiesUtil.getProperty("article_detail");
+    
     
         
 }

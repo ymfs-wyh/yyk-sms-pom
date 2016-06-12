@@ -1,6 +1,7 @@
 package com.yyk333.sms.knowledge.entities;
 
 import java.io.Serializable;
+import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -11,6 +12,8 @@ import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 import javax.persistence.Transient;
+
+import com.yyk333.sms.utils.DateUtil;
 
 @Entity
 @Table(name = "yyk_article")
@@ -110,6 +113,7 @@ public class Article implements Serializable {
 	 */
 	private Long updateTime;
 	
+	@Transient
 	private String url;
 
 	@Transient
@@ -120,6 +124,9 @@ public class Article implements Serializable {
 	
 	@Transient
 	private Integer isCollection;
+	
+	@Transient
+	private String updateTimeStr;
 
 	public Article() {
 		// TODO Auto-generated constructor stub
@@ -127,6 +134,7 @@ public class Article implements Serializable {
 	
 	public void setMore(){
 		this.setArtCatName(this.getArticleCategory().getArtCatName());
+		this.setUpdateTimeStr(DateUtil.dateToString(new Date(this.updateTime), "MM-dd"));
 	}
 
 	public Long getArtId() {
@@ -288,16 +296,24 @@ public class Article implements Serializable {
 	public void setArtCatName(String artCatName) {
 		this.artCatName = artCatName;
 	}
+	
+	public String getUpdateTimeStr() {
+		return updateTimeStr;
+	}
+
+	public void setUpdateTimeStr(String updateTimeStr) {
+		this.updateTimeStr = updateTimeStr;
+	}
 
 	@Override
 	public String toString() {
 		return "Article [artId=" + artId + ", title=" + title + ", intro=" + intro + ", content=" + content
 				+ ", keyWords=" + keyWords + ", articleCategory=" + articleCategory + ", isTop=" + isTop
-				+ ", isRecommend=" + isRecommend + ", isCollection=" + isCollection + ", status=" + status
-				+ ", thumbnail=" + thumbnail + ", detailPic=" + detailPic + ", totalCollection=" + totalCollection
-				+ ", totalComments=" + totalComments + ", totalShare=" + totalShare + ", createTime=" + createTime
-				+ ", updateTime=" + updateTime + ", url=" + url + ", keyWord=" + keyWord + ", artCatName=" + artCatName
-				+ "]";
+				+ ", isRecommend=" + isRecommend + ", status=" + status + ", thumbnail=" + thumbnail + ", detailPic="
+				+ detailPic + ", totalCollection=" + totalCollection + ", totalComments=" + totalComments
+				+ ", totalShare=" + totalShare + ", createTime=" + createTime + ", updateTime=" + updateTime + ", url="
+				+ url + ", keyWord=" + keyWord + ", artCatName=" + artCatName + ", isCollection=" + isCollection
+				+ ", updateTimeStr=" + updateTimeStr + "]";
 	}
-
+	
 }

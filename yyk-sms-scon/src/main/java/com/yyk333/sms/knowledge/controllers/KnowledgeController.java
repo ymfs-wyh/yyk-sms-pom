@@ -88,7 +88,7 @@ public class KnowledgeController {
 	public RespVO artCatInfoLoad(String userId) {
 		LOGGER.debug("服务消费者接收参数：userId->" + userId);
 
-		RespVO respVO = null;
+		RespVO respVO = new RespVO();
 
 		ArticleQueryDTO articleDTO = new ArticleQueryDTO();
 
@@ -133,13 +133,6 @@ public class KnowledgeController {
 		LOGGER.debug("服务消费者接收参数：pageSize->" + pageSize);
 
 		RespVO respVO = new RespVO();
-
-		if (!StringUtils.isNumeric(artCatId)) {
-			respVO.setStatus("0");
-			respVO.setInfo("请求参数artCatId为空或者不是数字！");
-			respVO.setErrCode("500");
-			return respVO;
-		}
 
 		if (!StringUtils.isNumeric(pageNo)) {
 			respVO.setStatus("0");
@@ -209,6 +202,82 @@ public class KnowledgeController {
 		respVO = JSON.parseObject(result, RespVO.class);
 		return respVO;
 
+	}
+	
+	/**
+	 * 热门文章列表
+	 * 
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/hot_art_list")
+	public RespVO hotArtList(String pageSize) {
+		
+		RespVO respVO = new RespVO();
+		Integer pageNo = 1;
+		
+		ArticleQueryDTO articleDTO = new ArticleQueryDTO();
+		articleDTO.setPageNo(pageNo);
+		articleDTO.setStatus(1);
+		
+		if (StringUtils.isNumeric(pageSize)) {
+			articleDTO.setPageSize(Integer.parseInt(pageSize));
+		}else{
+			articleDTO.setPageSize(5);
+		}
+		
+		List<String> listDesc = new ArrayList<>();
+		listDesc.add("totalCollection");
+		listDesc.add("updateTime");
+		listDesc.add("createTime");
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("desc", listDesc);
+		LOGGER.debug("排序map：->" + map);
+		articleDTO.setOrderMap(map);
+		
+		String postData = JSON.toJSONString(articleDTO);
+		String result = knowledgeService.hotArtList(postData);
+		respVO = JSON.parseObject(result, RespVO.class);
+		return respVO;
+		
+	}
+	
+	/**
+	 * 搜索关键字自动完成
+	 * 
+	 * @return
+	 */
+	@ResponseBody
+	@RequestMapping(value = "/sea_key_auto_com")
+	public RespVO seaKeyAutoCom(String keyWord, String pageSize) {
+		
+		RespVO respVO = new RespVO();
+		Integer pageNo = 1;
+		
+		ArticleQueryDTO articleDTO = new ArticleQueryDTO();
+		articleDTO.setPageNo(pageNo);
+		articleDTO.setStatus(1);
+		articleDTO.setKeyWord(keyWord);
+		
+		if (StringUtils.isNumeric(pageSize)) {
+			articleDTO.setPageSize(Integer.parseInt(pageSize));
+		}else{
+			articleDTO.setPageSize(5);
+		}
+		
+		List<String> listDesc = new ArrayList<>();
+		listDesc.add("updateTime");
+		listDesc.add("createTime");
+		Map<String, Object> map = new HashMap<String, Object>();
+		map.put("desc", listDesc);
+		LOGGER.debug("排序map：->" + map);
+		articleDTO.setOrderMap(map);
+		
+		String postData = JSON.toJSONString(articleDTO);
+		String result = knowledgeService.seaKeyAutoCom(postData);
+		respVO = JSON.parseObject(result, RespVO.class);
+		return respVO;
+		
 	}
 
 	/**
@@ -299,7 +368,7 @@ public class KnowledgeController {
 	}
 
 	/**
-	 * 搜索功能暂不实现
+	 * 搜索功能
 	 * 
 	 * @param keyWord
 	 * @param pageNo

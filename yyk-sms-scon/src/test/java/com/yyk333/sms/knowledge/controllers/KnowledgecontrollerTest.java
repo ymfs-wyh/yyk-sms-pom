@@ -52,9 +52,10 @@ public class KnowledgecontrollerTest {
 	public void testArtCatInfoLoad() {
 		MultiValueMap<String, Object> map = new LinkedMultiValueMap<String, Object>(); 
 //		map.put("userArtCatIds", "1,2,3,4,5,6");
-		map.add("userId", "1");
+		map.add("keyWord", "测试");
+		map.add("pageNo", "2");
 		
-		String result = template.postForObject(url+"art_cat_load", map, String.class);
+		String result = template.postForObject(url+"search", map, String.class);
 		System.out.println(result);
 	}
 

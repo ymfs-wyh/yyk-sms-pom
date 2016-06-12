@@ -17,7 +17,7 @@ import com.alibaba.fastjson.JSON;
 import com.yyk333.sms.constants.SystemConstants;
 import com.yyk333.sms.utils.MD5Util;
 import com.yyk333.sms.version.entities.Version;
-import com.yyk333.sms.version.repsository.VersionRepository;
+import com.yyk333.sms.version.repository.VersionRepository;
 import com.yyk333.sms.version.services.VersionControlService;
 import com.yyk333.sms.vo.RespVO;
 

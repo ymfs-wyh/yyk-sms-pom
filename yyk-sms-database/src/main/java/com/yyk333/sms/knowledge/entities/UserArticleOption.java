@@ -15,7 +15,7 @@ public class UserArticleOption implements Serializable {
 	/**
 	 * 
 	 */
-	private static final long serialVersionUID = -3117697109509312298L;
+	private static final Long serialVersionUID = -48170713629704663L;
 
 	/**
 	 * id Integer(11) NOT NULL COMMENT '主键id，自增',

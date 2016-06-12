@@ -9,6 +9,8 @@
 	<packaging>pom</packaging>
 	
 	<modules>
+		<module>yyk-sms-ws</module>
+		<module>yyk-sms-upacp</module>
 		<module>yyk-sms-api</module>
 		<module>yyk-sms-spro</module>
 		<module>yyk-sms-scon</module>
@@ -184,6 +186,7 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 	

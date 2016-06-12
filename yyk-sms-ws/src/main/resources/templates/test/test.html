@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1/xhtml"
+	xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>动弹列表</title>
+<script src="/ws/jquery-1.12.3.js"></script>
+<style type="text/css">
+.jz {
+	margin: 0 auto;
+	text-align: center;
+}
+
+.tw {
+	border: 1px dotted red;
+	height: 60px;
+	width: 600px;
+	margin: 0px auto;
+	padding-left: 10px;
+	padding-top: 10px;
+	margin-top: 5px;
+}
+
+.top {
+	
+}
+
+.buttom {
+	padding-top: 10px;
+}
+
+#send-box {
+	margin-top: 10px;
+}
+</style>
+</head>
+<body>
+	<div class="jz" style="font-size: 30px;">动弹列表</div>
+	<div class="jz" style="font-size: 20px;">
+		欢迎回来：<span id="uid" th:text="${uid}"></span>，当前在线人数<b id="pcount"></b>
+	</div>
+	<div class="jz" id="err-box"></div>
+	<div id="msg-box">
+		<div class="tw">
+			<div class="top">admin 2015-07-05</div>
+			<div class="buttom">请大家随意畅谈</div>
+		</div>
+	</div>
+	<div id="send-box" class="jz">
+		<input type="text" id="text-msg" style="width: 300px;" /> <input
+			type="button" onclick="send_msg()" value="发布动弹" />
+	</div>
+	<script type="text/javascript">
+		var uid = $("#uid").text();
+		var ws = new WebSocket('ws://192.168.0.89:8082/ws/ntfc');
+
+		ws.onerror = function(event) {
+			$('#err-box').html(event);
+		};
+
+		ws.onopen = function(event) {
+			start();
+		};
+
+		ws.onclose = function(event) {
+			var msg = JSON.stringify({
+				'uid' : uid,
+			});
+			ws.send(msg);
+		};
+
+		ws.onmessage = function(event) {
+			var data = JSON.parse(event.data);
+			alert(data);
+			render_data('<span style="color:red;">系统信息</span>', data.uid
+					+ "加入系统");
+		};
+
+		function render_data(uid, data) {
+			var msg = [];
+			msg.push('<div class="tw">');
+			msg.push('<div class="top">' + uid + '  2015-07-05</div>');
+			msg.push('<div class="buttom"> ' + data + ' </div>');
+			msg.push('</div>');
+			$('#msg-box').append(msg.join(''));
+		}
+
+		function start() {
+			if (username != '') {
+				var msg = JSON.stringify({
+					'uid' : uid,
+				});
+				ws.send(msg);
+			}
+		}
+
+		function send_msg() {
+			var text_msg = $('#text-msg').val();
+			if (text_msg != '') {
+				var msg = JSON.stringify({
+					'uid' : uid,
+					'data' : text_msg
+				});
+				ws.send(msg);
+				$('#text-msg').val('');
+			}
+		}
+
+		(function() {
+			if (username == '') {
+				alert('用户名为空，无法发布动弹');
+				$('#send-box').hide();
+			}
+		})();
+	</script>
+</body>
+</html>

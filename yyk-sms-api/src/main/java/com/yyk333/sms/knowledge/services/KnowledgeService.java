@@ -51,4 +51,18 @@ public interface KnowledgeService {
 	 */
 	public String userInfoSynchro(String postData);
 	
+	/**
+	 * 搜索关键字自动完成
+	 * @param postData：JSON
+	 * @return JSON
+	 */
+	public String seaKeyAutoCom(String postData);
+	
+	/**
+	 * 搜索热门文章列表
+	 * @param postData：JSON
+	 * @return JSON
+	 */
+	public String hotArtList(String postData);
+	
 }

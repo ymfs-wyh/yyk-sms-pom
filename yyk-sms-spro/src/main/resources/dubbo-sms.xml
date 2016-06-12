@@ -34,6 +34,12 @@
 	<dubbo:service interface="com.yyk333.sms.knowledge.services.KnowledgeService"
 		ref="knowledgeService" timeout="50000">
 	</dubbo:service>
+	
+	<!-- 要暴露的服务接口 -->
+	<!-- <dubbo:annotation package="com.yyk333.springboot.pns.services"/> -->
+	<dubbo:service interface="com.yyk333.sms.banner.services.BannerService"
+		ref="bannerService" timeout="50000">
+	</dubbo:service>
 
 
 </beans>

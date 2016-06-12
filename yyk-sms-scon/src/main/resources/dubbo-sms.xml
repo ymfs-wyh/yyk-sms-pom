@@ -24,6 +24,9 @@
    
     <!-- 生成远程服务代理，可以和本地bean一样使用demoService -->
     <dubbo:reference id="knowledgeService" interface="com.yyk333.sms.knowledge.services.KnowledgeService" timeout="50000"/>
+   
+    <!-- 生成远程服务代理，可以和本地bean一样使用demoService -->
+    <dubbo:reference id="bannerService" interface="com.yyk333.sms.banner.services.BannerService" timeout="50000"/>
 
 
 </beans>

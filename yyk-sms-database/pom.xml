@@ -12,14 +12,9 @@
 
 	<dependencies>
 		<dependency>
-			<groupId>org.neo4j</groupId>
-			<artifactId>neo4j-cypher-compiler-2.2</artifactId>
-			<version>2.2.5</version>
-		</dependency>
-		<dependency>
-			<groupId>org.neo4j</groupId>
-			<artifactId>neo4j-cypher-compiler-2.2</artifactId>
-			<version>2.2.5</version>
+			<groupId>com.yyk333.sms</groupId>
+			<artifactId>yyk-sms-common</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 	</dependencies>
 </project>

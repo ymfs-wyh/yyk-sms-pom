@@ -18,7 +18,7 @@ import com.yyk333.sms.constants.SystemConstants;
 import com.yyk333.sms.firing.dto.FiringQueryVO;
 import com.yyk333.sms.firing.entities.Firing;
 import com.yyk333.sms.firing.entities.FiringCategory;
-import com.yyk333.sms.firing.repsository.FiringRepository;
+import com.yyk333.sms.firing.repository.FiringRepository;
 import com.yyk333.sms.firing.services.FiringService;
 import com.yyk333.sms.utils.MD5Util;
 import com.yyk333.sms.utils.PropertiesUtil;

@@ -1,5 +1,6 @@
 package com.yyk333.sms.knowledge.services.impl;
 
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Service;
 import com.alibaba.fastjson.JSON;
 import com.yyk333.sms.config.entities.Config;
 import com.yyk333.sms.config.repository.ConfigRepository;
+import com.yyk333.sms.constants.SystemConstants;
 import com.yyk333.sms.knowledge.dto.ArticleQueryDTO;
 import com.yyk333.sms.knowledge.entities.Article;
 import com.yyk333.sms.knowledge.entities.ArticleCategory;
@@ -79,6 +81,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 	@Transactional
 	@Override
 	public String userInfoSynchro(String postData) {
+		// TODO 用户数据同步
 		LOGGER.debug("------------------用户数据同步服务提供者开始-----------------------");
 		LOGGER.debug("请求参数：postData：" + postData);
 		RespVO respVO = new RespVO();
@@ -103,17 +106,22 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
 			// 1.查询文章分类下文章列表
 			if (userId != null) {// 如果userId不为空则开始同步
+				// 获取用户定制栏目字符串
 				String artCatIds = (String) reqMap.get("userArtCatIds");
+				// 获取用户操作记录
 				List<Map<String, Object>> list = (List<Map<String, Object>>) reqMap.get("userArtOpts");
 
 				try {
 					if (StringUtils.isNotBlank(artCatIds)) {
+						// 根据用户id查询用户栏目
 						UserArticleCategory userArticleCategory = userArticleCategoryRepository.findByUserId(userId);
 						if (userArticleCategory != null) {
+							// 用户栏目存在则更新
 							userArticleCategory.setArtCatIds(artCatIds);
 							userArticleCategory.setUpdateTime(System.currentTimeMillis() / 1000);
 							userArticleCategoryRepository.save(userArticleCategory);
 						} else {
+							// 用户栏目不存在则插入
 							userArticleCategory = new UserArticleCategory();
 							userArticleCategory.setArtCatIds(artCatIds);
 							userArticleCategory.setUserId(userId);
@@ -125,6 +133,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
 					if (list != null && list.size() > 0) {
 						for (Map<String, Object> map : list) {
+							// 获取用户文章操作参数，文章id和操作类型
 							String artId_ = (String) map.get("artId");
 							String optType_ = (String) map.get("optType");
 							if (StringUtils.isNumeric(artId_) && StringUtils.isNumeric(optType_)) {// 如果artId不为空则查询文章详情
@@ -132,27 +141,29 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 								article.setStatus(1);
 								Long artId = Long.parseLong(artId_);
 								Integer optType = Integer.parseInt(optType_);
-
+								// 查询文章
 								Article article2 = articleRepository.findByArtIdAndStatus(artId, article.getStatus());
 
 								LOGGER.debug("查询文章详情结果：" + article2);
 								if (article2 != null) {
-									if (optType == 1) {
+									if (optType == 1) {// 收藏
 										UserArticleOption userArticleOption = null;
 										try {
-											userArticleOption = userArticleOptionRepository.findByUserIdAndArtIdAndOptType(userId, artId, 1);
+											// 查询用户文章收藏记录
+											userArticleOption = userArticleOptionRepository
+													.findByUserIdAndArtIdAndOptType(userId, artId, 1);
 										} catch (Exception e) {
 											respVO.setStatus("0");
 											respVO.setInfo("服务提供者查询用户文章操作记录异常！");
 											respVO.setErrCode("500");
 											return JSON.toJSONString(respVO);
 										}
-										if (userArticleOption!=null) {
+										if (userArticleOption != null) {// 已收藏则取消收藏，文章收藏总数-1
 											userArticleOptionRepository.delete(userArticleOption.getUserArtOptId());
 											article2.setTotalCollection(article2.getTotalCollection() - 1);
-										}else{
+										} else {// 未收藏则收藏，文章收藏总数+1
 											article2.setTotalCollection(article2.getTotalCollection() + 1);
-											
+
 											userArticleOption = new UserArticleOption();
 											userArticleOption.setArtId(artId);
 											userArticleOption.setUserId(userId);
@@ -161,7 +172,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 											userArticleOption.setUpdateTime(System.currentTimeMillis() / 1000);
 											userArticleOptionRepository.save(userArticleOption);
 										}
-									} else if (optType == 2) {
+									} else if (optType == 2) {// 分享，插入操作记录，文章分享总数+1
 										article2.setTotalShare(article2.getTotalShare() + 1);
 										UserArticleOption userArticleOption = new UserArticleOption();
 										userArticleOption.setArtId(artId);
@@ -258,15 +269,18 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 			List<ArticleCategory> userArtCatList = new ArrayList<>();
 			if (userId != null) {// 如果userId不为空则查询用户定制栏目
 				try {
+
 					UserArticleCategory userArticleCategory = userArticleCategoryRepository.findByUserId(userId);
 
-					String artCatIds = userArticleCategory.getArtCatIds();
-					if (StringUtils.isNotBlank(artCatIds)) {
-						articleCategory.setArtCatIdArr(artCatIds.split(","));
-					}
+					if (userArticleCategory != null) {
+						String artCatIds = userArticleCategory.getArtCatIds();
+						if (StringUtils.isNotBlank(artCatIds)) {
+							articleCategory.setArtCatIdArr(artCatIds.split(","));
+						}
 
-					userArtCatList = articleCategoryRepository
-							.findAll(new ArticleCategorySpecification(articleCategory), sort);
+						userArtCatList = articleCategoryRepository
+								.findAll(new ArticleCategorySpecification(articleCategory), sort);
+					}
 
 				} catch (Exception e) {
 					LOGGER.debug("查询用户栏目异常！");
@@ -289,14 +303,17 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 			Map<String, Object> map = new HashMap<>();
 			List<ArticleCategory> artCatResList = new ArrayList<>();
 			for (ArticleCategory articleCategory2 : artCatList) {
+				articleCategory2.setCatIcon(SystemConstants.FILE_SERVER_PATH + articleCategory2.getCatIcon());
 				articleCategory2.setStatus(null);
 				articleCategory2.setCreateTime(null);
 				artCatResList.add(articleCategory2);
 			}
 			map.put("artCatList", artCatResList);
 			if (userId != null && userArtCatList != null && userArtCatList.size() > 0) {
+				// 返回用户定制栏目
 				List<ArticleCategory> userArtCatResList = new ArrayList<>();
 				for (ArticleCategory articleCategory2 : userArtCatList) {
+					articleCategory2.setCatIcon(SystemConstants.FILE_SERVER_PATH + articleCategory2.getCatIcon());
 					articleCategory2.setStatus(null);
 					articleCategory2.setCreateTime(null);
 					userArtCatResList.add(articleCategory2);
@@ -327,6 +344,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 	@SuppressWarnings("unchecked")
 	@Override
 	public String artCatArtInfoLoad(String postData) {
+		// TODO 加载文章列表
 		LOGGER.debug("------------------分类页面文章数据加载服务提供者开始-----------------------");
 		LOGGER.debug("请求参数：postData：" + postData);
 		RespVO respVO = new RespVO();
@@ -369,7 +387,6 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 			if (artCatId != null) {// 如果artCatId不为空则查询
 				Article article = new Article();
 				article.setStatus(articleDTO.getStatus());
-				article.setArtId(articleDTO.getArtId());
 
 				if (article.getStatus() == null) {
 					article.setStatus(1);
@@ -386,13 +403,12 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
 				Integer pageNo = articleDTO.getPageNo() - 1;
 				LOGGER.debug("分页pageNo->" + pageNo);
-
-				if (pageNo >= 1 && article.getArtId() == null) {
-					respVO.setStatus("0");
-					respVO.setInfo("服务提供者接收artId参数为空！");
-					respVO.setErrCode("500");
-					return JSON.toJSONString(respVO);
-				} else if (pageNo == 0) {// 当pageNo==0时即传入pageNo==1时请求最新数据
+				
+				if (articleDTO.getArtId()!=null) {
+					article.setArtId(articleDTO.getArtId());
+				}
+				
+				if (pageNo == 0) {// 当pageNo==0时即传入pageNo==1时请求最新数据
 					article.setArtId(null);
 				}
 
@@ -406,22 +422,24 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
 				PageRequest pageable = new PageRequest(pageNo, pageSize, sort);
 				try {
+					// 从缓存中读取推荐分类id
 					Long remArtCatId = (Long) client.get("app_art_rem_cat_id");
-					if (remArtCatId == null) {
+					if (remArtCatId == null) {// 无缓存查询数据库配置并保存缓存
 						Config config = configRepository.findOne("app_art_rem_cat_id");
 						if (config != null) {
 							remArtCatId = Long.parseLong(config.getValue());
 							client.set("app_art_list_flesh_time", 24 * 60 * 60 * 1000, remArtCatId);
 						}
 					}
-					if (artCatId == remArtCatId) {// artCatId为0时为推荐
+					if (artCatId == remArtCatId) {// artCatId为推荐
 						LOGGER.debug("查询推荐文章列表");
 						article.setIsRecommend(1);
 						page = articleRepository.findAll(new ArticleSpecification(article), pageable);
 					} else {
+						// 查询分类文章
 						LOGGER.debug("查询文章分类：" + artCatId);
 						ArticleCategory articleCategory = new ArticleCategory();
-						articleCategory.setArtCatId(remArtCatId);
+						articleCategory.setArtCatId(artCatId);
 						article.setArticleCategory(articleCategory);
 						page = articleRepository.findAll(new ArticleSpecification(article), pageable);
 					}
@@ -434,6 +452,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 
 				List<Article> list = new ArrayList<>();
 				list = page.getContent();
+				
 				int totalPages = page.getTotalPages();
 				LOGGER.debug("查询文章列表结果：" + list);
 				int size = list.size();
@@ -449,6 +468,8 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 					result.put("remPage", String.valueOf(totalPages - pageNo - 1));
 					List<Article> resList = new ArrayList<>();
 					for (Article article2 : list) {
+						article2.setThumbnail(SystemConstants.FILE_SERVER_PATH + article2.getThumbnail());
+						article2.setDetailPic(SystemConstants.FILE_SERVER_PATH + article2.getDetailPic());
 						article2.setStatus(null);
 						article2.setCreateTime(null);
 						article2.setMore();
@@ -456,6 +477,8 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 						resList.add(article2);
 					}
 					result.put("artList", resList);
+					result.put("currentPage", page.getNumber()+1);
+					result.put("totalPages", page.getTotalPages());
 					respVO.setData(result);
 				} else {
 					respVO.setStatus("1");
@@ -468,6 +491,8 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 					}
 					result.put("remPage", 0);
 					result.put("artList", list);
+					result.put("currentPage", page.getNumber()+1);
+					result.put("totalPages", page.getTotalPages());
 					respVO.setData(result);
 				}
 			} else {
@@ -486,7 +511,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 	}
 
 	/**
-	 * 搜索功能暂不实现
+	 * 文章搜索功能
 	 * 
 	 * @param keyWord
 	 * @param pageNo
@@ -496,6 +521,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 	@SuppressWarnings("unchecked")
 	@Override
 	public String artInfoQuery(String postData) {
+		// TODO 文章搜索功能
 		LOGGER.debug("------------------文章信息综合查询服务提供者开始-----------------------");
 		LOGGER.debug("请求参数：postData：" + postData);
 		RespVO respVO = new RespVO();
@@ -578,6 +604,8 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 				Map<String, Object> result = new HashMap<>();
 				List<Article> resList = new ArrayList<>();
 				for (Article article2 : list) {
+					article2.setThumbnail(SystemConstants.FILE_SERVER_PATH + article2.getThumbnail());
+					article2.setDetailPic(SystemConstants.FILE_SERVER_PATH + article2.getDetailPic());
 					article2.setStatus(null);
 					article2.setCreateTime(null);
 					article2.setMore();
@@ -585,18 +613,20 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 					resList.add(article2);
 				}
 				result.put("artList", resList);
+				result.put("currentPage", page.getNumber()+1);
+				result.put("totalPages", page.getTotalPages());
 				respVO.setData(result);
 				if (list != null && list.size() > 0) {
 					ArticleSearchRecord entity = articleSearchRecordRepository.findByKeyWord(keyWord);
 					if (entity != null) {
-						entity.setSearchCount(entity.getSearchCount()+1);
-						entity.setUpdateTime(System.currentTimeMillis()/1000);
-					}else{
+						entity.setSearchCount(entity.getSearchCount() + 1);
+						entity.setUpdateTime(System.currentTimeMillis() / 1000);
+					} else {
 						entity = new ArticleSearchRecord();
 						entity.setKeyWord(keyWord);
 						entity.setSearchCount(1L);
-						entity.setCreateTime(System.currentTimeMillis()/1000);
-						entity.setUpdateTime(System.currentTimeMillis()/1000);
+						entity.setCreateTime(System.currentTimeMillis() / 1000);
+						entity.setUpdateTime(System.currentTimeMillis() / 1000);
 					}
 					articleSearchRecordRepository.save(entity);
 				}
@@ -623,6 +653,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 	@SuppressWarnings("unchecked")
 	@Override
 	public String artKeyHotQuery(String postData) {
+		// TODO 热门搜索关键字列表
 		LOGGER.debug("------------------查询热门搜索服务提供者开始-----------------------");
 		LOGGER.debug("请求参数：postData：" + postData);
 		RespVO respVO = new RespVO();
@@ -711,6 +742,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 	 */
 	@Override
 	public String artDetInfoQuery(String postData) {
+		// TODO 文章详情查询
 		LOGGER.debug("------------------查询文章详情服务提供者开始-----------------------");
 		LOGGER.debug("请求参数：postData：" + postData);
 		RespVO respVO = new RespVO();
@@ -746,11 +778,12 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 					return JSON.toJSONString(respVO);
 				}
 				Long userId = articleDTO.getUserId();
-				
+
 				UserArticleOption userArticleOption = null;
 				try {
-					if (userId!=null) {
-						userArticleOption = userArticleOptionRepository.findByUserIdAndArtIdAndOptType(userId, artId, 1);
+					if (userId != null) {
+						userArticleOption = userArticleOptionRepository.findByUserIdAndArtIdAndOptType(userId, artId,
+								1);
 					}
 				} catch (Exception e) {
 					respVO.setStatus("0");
@@ -766,11 +799,14 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 					respVO.setInfo("查询文章详情成功！");
 					respVO.setErrCode("200");
 					Map<String, Object> result = new HashMap<>();
-					if (userArticleOption!=null) {
+					if (userArticleOption != null) {
 						article2.setIsCollection(1);
-					}else{
+					} else {
 						article2.setIsCollection(0);
 					}
+					article2.setUrl(MessageFormat.format(SystemConstants.ARTICLE_DETAIL, String.valueOf(article2.getArtId()), userId==null?"":String.valueOf(userId)));
+					article2.setThumbnail(SystemConstants.FILE_SERVER_PATH + article2.getThumbnail());
+					article2.setDetailPic(SystemConstants.FILE_SERVER_PATH + article2.getDetailPic());
 					article2.setMore();
 					article2.setArticleCategory(null);
 					article2.setStatus(null);
@@ -808,6 +844,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 	@Transactional
 	@Override
 	public String artDetInfoUpdate(String postData) {
+		// TODO 文章编辑,用于统计收藏，分享
 		LOGGER.debug("------------------文章更新编辑服务提供者开始-----------------------");
 		LOGGER.debug("请求参数：postData：" + postData);
 		RespVO respVO = new RespVO();
@@ -852,19 +889,20 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 					if (optType == 1) {
 						UserArticleOption userArticleOption = null;
 						try {
-							userArticleOption = userArticleOptionRepository.findByUserIdAndArtIdAndOptType(userId, artId, 1);
+							userArticleOption = userArticleOptionRepository.findByUserIdAndArtIdAndOptType(userId,
+									artId, 1);
 						} catch (Exception e) {
 							respVO.setStatus("0");
 							respVO.setInfo("服务提供者查询用户文章操作记录异常！");
 							respVO.setErrCode("500");
 							return JSON.toJSONString(respVO);
 						}
-						if (userArticleOption!=null) {
+						if (userArticleOption != null) {
 							userArticleOptionRepository.delete(userArticleOption.getUserArtOptId());
 							article2.setTotalCollection(article2.getTotalCollection() - 1);
-						}else{
+						} else {
 							article2.setTotalCollection(article2.getTotalCollection() + 1);
-							
+
 							userArticleOption = new UserArticleOption();
 							userArticleOption.setArtId(artId);
 							userArticleOption.setUserId(userId);
@@ -884,7 +922,7 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 						userArticleOptionRepository.save(userArticleOption);
 					}
 					articleRepository.save(article2);
-					
+
 					respVO.setStatus("1");
 					respVO.setInfo("更新文章操作成功！");
 					respVO.setErrCode("200");
@@ -905,6 +943,224 @@ public class KnowledgeServiceImpl implements KnowledgeService {
 			respVO.setErrCode("500");
 		}
 		LOGGER.debug("------------------文章更新编辑服务提供者结束-----------------------");
+		return JSON.toJSONString(respVO);
+	}
+
+	/**
+	 * 搜索关键字自动完成
+	 * 
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public String seaKeyAutoCom(String postData) {
+		// TODO 搜索关键字自动完成
+		LOGGER.debug("------------------搜索关键字自动完成服务提供者开始-----------------------");
+		LOGGER.debug("请求参数：postData：" + postData);
+		RespVO respVO = new RespVO();
+		if (StringUtils.isNotBlank(postData)) {
+			ArticleQueryDTO articleDTO = new ArticleQueryDTO();
+			try {
+				articleDTO = JSON.parseObject(postData, ArticleQueryDTO.class);
+			} catch (Exception e) {
+				respVO.setStatus("0");
+				respVO.setInfo("解析参数失败！");
+				respVO.setErrCode("500");
+				LOGGER.debug("解析参数失败！");
+				return JSON.toJSONString(respVO);
+			}
+
+			// 添加排序
+			Map<String, Object> orderMap = articleDTO.getOrderMap();
+			List<Order> orderList = new ArrayList<Order>();
+			if (orderMap != null) {
+				List<String> ascList = (List<String>) orderMap.get("asc");
+				if (ascList != null && ascList.size() > 0) {
+					for (String string : ascList) {
+						orderList.add(new Order(Direction.ASC, string));
+					}
+				}
+				List<String> descList = (List<String>) orderMap.get("desc");
+				if (descList != null && descList.size() > 0) {
+					for (String string : descList) {
+						orderList.add(new Order(Direction.DESC, string));
+					}
+				}
+			}
+
+			LOGGER.debug("文章排序字段：orderList->" + orderList);
+			Page<Article> page = null;
+
+			// 1.查询文章分类下文章列表
+			// 如果artCatId不为空则查询
+			Article article = new Article();
+			article.setStatus(articleDTO.getStatus());
+			article.setTitle(articleDTO.getKeyWord());
+
+			if (article.getStatus() == null) {
+				article.setStatus(1);
+			}
+
+			if (articleDTO.getPageNo() == null || articleDTO.getPageNo() <= 0) {
+				articleDTO.setPageNo(1);
+			}
+
+			Integer pageNo = articleDTO.getPageNo() - 1;
+			LOGGER.debug("分页pageNo->" + pageNo);
+
+			Integer pageSize = articleDTO.getPageSize() != null ? articleDTO.getPageSize() : 10;
+			LOGGER.debug("分页pageSize->" + pageSize);
+
+			Sort sort = null;
+			if (orderList != null && orderList.size() > 0) {
+				sort = new Sort(orderList);
+			}
+
+			PageRequest pageable = new PageRequest(pageNo, pageSize, sort);
+			try {
+				page = articleRepository.findAll(new ArticleSpecification(article), pageable);
+			} catch (Exception e) {
+				respVO.setStatus("0");
+				respVO.setInfo("服务提供者查询文章列表异常！");
+				respVO.setErrCode("500");
+				return JSON.toJSONString(respVO);
+			}
+
+			List<Article> list = new ArrayList<>();
+			list = page.getContent();
+			int totalPages = page.getTotalPages();
+			LOGGER.debug("查询文章列表结果：" + list);
+			int size = list.size();
+			if (size > 0) {
+				respVO.setStatus("1");
+				respVO.setInfo("查询分类文章列表成功！");
+				respVO.setErrCode("200");
+				Map<String, Object> result = new HashMap<>();
+				result.put("remPage", String.valueOf(totalPages - pageNo - 1));
+				List<String> resList = new ArrayList<String>();
+				for (Article article2 : list) {
+					resList.add(article2.getTitle());
+				}
+				result.put("keyList", resList);
+				respVO.setData(result);
+			} else {
+				respVO.setStatus("1");
+				respVO.setInfo("查询分类文章列表成功！");
+				respVO.setErrCode("200");
+				Map<String, Object> result = new HashMap<>();
+				result.put("keyList", list);
+				respVO.setData(result);
+			}
+		} else {
+			respVO.setStatus("0");
+			respVO.setInfo("服务提供者接收参数为空！");
+			respVO.setErrCode("500");
+		}
+		LOGGER.debug("------------------搜索关键字自动完成服务提供者结束-----------------------");
+		return JSON.toJSONString(respVO);
+	}
+	
+	/**
+	 * 热门文章列表
+	 * 
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	@Override
+	public String hotArtList(String postData) {
+		// TODO 热门文章列表搜索，搜索收藏数最大的文章列表，没有则查询最新更新文章
+		LOGGER.debug("------------------热门文章列表服务提供者开始-----------------------");
+		LOGGER.debug("请求参数：postData：" + postData);
+		RespVO respVO = new RespVO();
+		if (StringUtils.isNotBlank(postData)) {
+			ArticleQueryDTO articleDTO = null;
+			try {
+				articleDTO = JSON.parseObject(postData, ArticleQueryDTO.class);
+			} catch (Exception e) {
+				respVO.setStatus("0");
+				respVO.setInfo("解析参数失败！");
+				respVO.setErrCode("500");
+				LOGGER.debug("解析参数失败！");
+				return JSON.toJSONString(respVO);
+			}
+
+			// 添加排序
+			Map<String, Object> orderMap = articleDTO.getOrderMap();
+			List<Order> orderList = new ArrayList<Order>();
+			if (orderMap != null) {
+				List<String> ascList = (List<String>) orderMap.get("asc");
+				if (ascList != null && ascList.size() > 0) {
+					for (String string : ascList) {
+						orderList.add(new Order(Direction.ASC, string));
+					}
+				}
+				List<String> descList = (List<String>) orderMap.get("desc");
+				if (descList != null && descList.size() > 0) {
+					for (String string : descList) {
+						orderList.add(new Order(Direction.DESC, string));
+					}
+				}
+			}
+
+			LOGGER.debug("文章排序字段：orderList->" + orderList);
+			Page<Article> page = null;
+			// 1.查询文章分类下文章列表
+			// 如果artCatId不为空则查询
+			Article article = new Article();
+			article.setStatus(articleDTO.getStatus());
+
+			if (article.getStatus() == null) {
+				article.setStatus(1);
+			}
+
+			if (articleDTO.getPageNo() == null || articleDTO.getPageNo() == 0) {
+				articleDTO.setPageNo(1);
+			}
+
+			Integer pageNo = articleDTO.getPageNo() - 1;
+			LOGGER.debug("分页pageNo->" + pageNo);
+			Integer pageSize = articleDTO.getPageSize() != null ? articleDTO.getPageSize() : 5;
+			LOGGER.debug("分页pageSize->" + pageSize);
+
+			Sort sort = null;
+			if (orderList != null && orderList.size() > 0) {
+				sort = new Sort(orderList);
+			}
+
+			PageRequest pageable = new PageRequest(pageNo, pageSize, sort);
+			try {
+				page = articleRepository.findAll(new ArticleSpecification(article), pageable);
+			} catch (Exception e) {
+				respVO.setStatus("0");
+				respVO.setInfo("服务提供者搜索文章异常！");
+				respVO.setErrCode("500");
+				return JSON.toJSONString(respVO);
+			}
+
+			List<Article> list = page.getContent();
+			LOGGER.debug("查询文章列表结果：" + list);
+			respVO.setStatus("1");
+			respVO.setInfo("查询分类文章列表成功！");
+			respVO.setErrCode("200");
+			Map<String, Object> result = new HashMap<>();
+			List<Article> resList = new ArrayList<>();
+			for (Article article2 : list) {
+				article2.setThumbnail(SystemConstants.FILE_SERVER_PATH + article2.getThumbnail());
+				article2.setDetailPic(SystemConstants.FILE_SERVER_PATH + article2.getDetailPic());
+				article2.setStatus(null);
+				article2.setCreateTime(null);
+				article2.setMore();
+				article2.setArticleCategory(null);
+				resList.add(article2);
+			}
+			result.put("artList", resList);
+			respVO.setData(result);
+		} else {
+			respVO.setStatus("0");
+			respVO.setInfo("服务提供者接收参数为空！");
+			respVO.setErrCode("500");
+		}
+		LOGGER.debug("------------------热门文章列表服务提供者结束-----------------------");
 		return JSON.toJSONString(respVO);
 	}
 
@@ -951,14 +1207,21 @@ class ArticleSpecification implements Specification<Article> {
 
 	@Override
 	public Predicate toPredicate(Root<Article> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+		// TODO 文章查询条件拼接
 		List<Predicate> list = new ArrayList<Predicate>();
 
+		if (StringUtils.isNotBlank(article.getTitle())) {
+			list.add(cb.like(root.get("title").as(String.class), "%" + article.getTitle() + "%"));
+		}
 		if (StringUtils.isNotBlank(article.getKeyWord())) {
 			list.add(cb.or(cb.like(root.get("title").as(String.class), "%" + article.getKeyWord() + "%"),
 					cb.like(root.get("keyWords").as(String.class), "%" + article.getKeyWord() + "%")));
 		}
 		if (article.getArtId() != null) {// 用于查询文章列表上拉加载数据文章id小于最后文章id
 			list.add(cb.lt(root.get("artId").as(Integer.class), article.getArtId()));
+		}
+		if (article.getArticleCategory() != null) {
+			list.add(cb.equal(root.get("articleCategory").as(ArticleCategory.class), article.getArticleCategory()));
 		}
 		if (article.getStatus() != null) {
 			list.add(cb.equal(root.get("status").as(Integer.class), article.getStatus()));
